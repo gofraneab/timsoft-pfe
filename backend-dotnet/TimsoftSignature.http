@@ -1,0 +1,6 @@
+@TimsoftSignature_HostAddress = http://localhost:5271
+
+GET {{TimsoftSignature_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

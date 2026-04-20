@@ -1,0 +1,105 @@
+<div class="create-page">
+
+  <!-- Header -->
+  <div class="create-header">
+    <h1>Create New Template</h1>
+    <p>Configure your email signature template and editable fields</p>
+  </div>
+
+  <!-- Steps -->
+  <div class="steps">
+    <div class="step" *ngFor="let step of steps" [class.active]="currentStep === step.number" [class.done]="currentStep > step.number">
+      <div class="step-circle">{{step.number}}</div>
+      <span class="step-label">{{step.label}}</span>
+    </div>
+  </div>
+
+  <div class="create-body">
+
+    <!-- Left Panel -->
+    <div class="left-panel">
+      <h3>Template Information</h3>
+
+      <div class="form-group">
+        <label>Template Name *</label>
+        <input type="text" [(ngModel)]="signatureName" placeholder="New Template" class="form-input"/>
+      </div>
+
+      <div class="form-group">
+        <label>Description</label>
+        <textarea [(ngModel)]="description" placeholder="Description..." class="form-input" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Département *</label>
+        <select [(ngModel)]="selectedDepartmentId" class="form-input">
+          <option value="0">Sélectionner un département</option>
+          <option *ngFor="let dept of departments" [value]="dept.id">{{dept.name}}</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label>Template Type</label>
+        <select [(ngModel)]="selectedTemplate" class="form-input">
+          <option value="0">Minimal Clean</option>
+          <option value="1">Modern Professional</option>
+        </select>
+      </div>
+
+      <div class="editable-fields">
+        <h4>Editable Fields</h4>
+        <p>Define which fields users can customize</p>
+        <div class="field-row" *ngFor="let field of ['name','jobTitle','email','phone','department','linkedin','website']">
+          <span>{{field}}</span>
+          <label class="toggle">
+            <input type="checkbox" [(ngModel)]="editableFields[field]"/>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Right Panel -->
+    <div class="right-panel">
+
+      <!-- Tabs -->
+      <div class="editor-tabs">
+        <button class="editor-tab" [class.active]="activeTab === 'editor'" (click)="activeTab = 'editor'">
+          &lt;/&gt; HTML Editor
+        </button>
+        <button class="editor-tab" [class.active]="activeTab === 'preview'" (click)="activeTab = 'preview'">
+          👁 Preview
+        </button>
+        <span class="hint">Use {{'{{'}}fieldName{{'}}'}} for dynamic fields</span>
+      </div>
+
+      <!-- HTML Editor -->
+      <div class="editor-area" *ngIf="activeTab === 'editor'">
+        <textarea
+          class="html-editor"
+          [(ngModel)]="htmlContent"
+          (ngModelChange)="updatePreview()"
+          spellcheck="false">
+        </textarea>
+      </div>
+
+      <!-- Preview -->
+      <div class="preview-area" *ngIf="activeTab === 'preview'">
+        <div class="preview-box" [innerHTML]="previewHtml"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="create-footer">
+    <span class="autosave">✅ Auto-save enabled</span>
+    <div class="footer-actions">
+      <button class="btn-cancel" routerLink="/templates">Cancel</button>
+      <button class="btn-draft" (click)="saveAsDraft()">Save as Draft</button>
+      <button class="btn-publish" (click)="publish()">🚀 Publish Template</button>
+    </div>
+  </div>
+
+</div>

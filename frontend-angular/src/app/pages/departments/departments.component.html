@@ -1,0 +1,78 @@
+<div class="departments-page">
+
+  <div class="page-header">
+    <div>
+      <h1>Departments</h1>
+      <p>Gérer les départements et leurs signatures assignées</p>
+    </div>
+    <button class="btn-add" (click)="openAddModal()">+ Add Department</button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Departments</div>
+      <div class="stat-value">{{departments.length}}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Users</div>
+<div class="stat-value">{{getTotalUsers()}}</div>    </div>
+  </div>
+
+  <!-- Grid -->
+  <div class="dept-grid">
+    <div class="dept-card" *ngFor="let dept of departments">
+      <div class="dept-header">
+        <div class="dept-icon">🏢</div>
+        <div class="dept-actions">
+          <button class="btn-edit" (click)="openEditModal(dept)">✏</button>
+          <button class="btn-delete" (click)="deleteDepartment(dept.id)">🗑</button>
+        </div>
+      </div>
+      <div class="dept-name">{{dept.name}}</div>
+      <div class="dept-desc">{{dept.description || 'Aucune description'}}</div>
+      <div class="dept-stats">
+        <div class="dept-stat">
+          <span class="stat-num">{{getUserCount(dept)}}</span>
+          <span class="stat-lbl">Users</span>
+        </div>
+        <div class="dept-stat">
+          <span class="stat-num">{{getSignatureCount(dept)}}</span>
+          <span class="stat-lbl">Templates</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="departments.length === 0">
+      <p>Aucun département créé</p>
+      <button class="btn-add" (click)="openAddModal()">+ Ajouter</button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="custom-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="custom-modal" (click)="$event.stopPropagation()">
+      <div class="custom-modal-header">
+        <h2>{{isEditing ? 'Edit Department' : 'Add Department'}}</h2>
+        <button class="custom-close" (click)="closeModal()">✕</button>
+      </div>
+      <div class="custom-modal-body">
+        <div class="form-group">
+          <label>Nom *</label>
+          <input type="text" [(ngModel)]="selectedDept.name" class="form-input" placeholder="Ex: Informatique"/>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea [(ngModel)]="selectedDept.description" class="form-input" rows="3" placeholder="Description..."></textarea>
+        </div>
+      </div>
+      <div class="custom-modal-footer">
+        <button class="btn-cancel" (click)="closeModal()">Annuler</button>
+        <button class="btn-save" (click)="saveDepartment()">
+          {{isEditing ? 'Modifier' : 'Ajouter'}}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

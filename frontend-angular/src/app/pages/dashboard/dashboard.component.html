@@ -1,0 +1,131 @@
+<div class="dashboard-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Dashboard</h1>
+      <p>Vue d'ensemble de la gestion des signatures Timsoft</p>
+    </div>
+    <button class="btn-create" routerLink="/templates/create">
+      + Create Template
+    </button>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card blue">
+      <div class="stat-icon">✉</div>
+      <div class="stat-info">
+        <div class="stat-value">{{totalSignatures}}</div>
+        <div class="stat-label">Total Templates</div>
+      </div>
+    </div>
+    <div class="stat-card green">
+      <div class="stat-icon">✅</div>
+      <div class="stat-info">
+        <div class="stat-value">{{publishedSignatures}}</div>
+        <div class="stat-label">Published</div>
+      </div>
+    </div>
+    <div class="stat-card amber">
+      <div class="stat-icon">📝</div>
+      <div class="stat-info">
+        <div class="stat-value">{{draftSignatures}}</div>
+        <div class="stat-label">Drafts</div>
+      </div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-icon">👥</div>
+      <div class="stat-info">
+        <div class="stat-value">{{totalUsers}}</div>
+        <div class="stat-label">Total Users</div>
+      </div>
+    </div>
+    <div class="stat-card teal">
+      <div class="stat-icon">🏢</div>
+      <div class="stat-info">
+        <div class="stat-value">{{totalDepartments}}</div>
+        <div class="stat-label">Departments</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content Grid -->
+  <div class="content-grid">
+
+    <!-- Recent Signatures -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Recent Templates</h3>
+        <a routerLink="/templates" class="link-more">View all →</a>
+      </div>
+      <div class="card-body">
+        <div class="list-item" *ngFor="let sig of recentSignatures">
+          <div class="item-preview" [style.background]="sig.typeTemplate === 0 ? '#e8f4e8' : '#e8eef8'">
+            <div class="preview-dot"></div>
+          </div>
+          <div class="item-info">
+            <div class="item-name">{{sig.signatureName}}</div>
+            <div class="item-meta">{{getTemplateLabel(sig.typeTemplate)}}</div>
+          </div>
+          <span class="badge-status" [ngClass]="getStatusClass(sig.status)">
+            {{getStatusLabel(sig.status)}}
+          </span>
+        </div>
+        <div class="empty-list" *ngIf="recentSignatures.length === 0">
+          <p>Aucune signature créée</p>
+          <button routerLink="/templates/create" class="btn-create-sm">+ Créer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Users -->
+    <div class="card">
+      <div class="card-header">
+        <h3>Recent Users</h3>
+        <a routerLink="/users" class="link-more">View all →</a>
+      </div>
+      <div class="card-body">
+        <div class="list-item" *ngFor="let user of recentUsers">
+          <div class="avatar" [style.background]="getAvatarColor(user.id)">
+            {{getInitials(user)}}
+          </div>
+          <div class="item-info">
+            <div class="item-name">{{user.firstName}} {{user.lastName}}</div>
+            <div class="item-meta">{{user.email}}</div>
+          </div>
+          <span class="role-badge" [ngClass]="user.role === 0 ? 'badge-admin' : 'badge-user'">
+            {{getRoleLabel(user.role)}}
+          </span>
+        </div>
+        <div class="empty-list" *ngIf="recentUsers.length === 0">
+          <p>Aucun utilisateur créé</p>
+          <button routerLink="/users" class="btn-create-sm">+ Ajouter</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Departments -->
+    <div class="card full-width">
+      <div class="card-header">
+        <h3>Departments</h3>
+        <a routerLink="/departments" class="link-more">Gérer →</a>
+      </div>
+      <div class="card-body dept-grid">
+        <div class="dept-card" *ngFor="let dept of departments">
+          <div class="dept-icon">🏢</div>
+          <div class="dept-name">{{dept.name}}</div>
+          <div class="dept-desc">{{dept.description}}</div>
+          <div class="dept-stats">
+            <span>{{dept.users?.length || 0}} users</span>
+            <span>{{dept.signatures?.length || 0}} templates</span>
+          </div>
+        </div>
+        <div class="empty-list" *ngIf="departments.length === 0">
+          <p>Aucun département créé</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>

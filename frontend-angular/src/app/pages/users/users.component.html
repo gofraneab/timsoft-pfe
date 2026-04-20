@@ -1,0 +1,163 @@
+<div class="users-page">
+
+  <div class="page-header">
+    <div>
+      <h1>User Management</h1>
+      <p>Manage users, departments and template assignments</p>
+    </div>
+    <button class="btn-add" (click)="openAddModal()">+ Add User</button>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-label">Total Users</div>
+      <div class="stat-value">{{allUsers.length}}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Admins</div>
+      <div class="stat-value">{{countByRole(0)}}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Users</div>
+      <div class="stat-value">{{countByRole(1)}}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Departments</div>
+      <div class="stat-value">{{departments.length}}</div>
+    </div>
+  </div>
+
+  <div class="filters-row">
+    <div class="search-box">
+      <span>🔍</span>
+      <input type="text" placeholder="Search users..."
+        [(ngModel)]="searchTerm" (ngModelChange)="applyFilters()"/>
+    </div>
+    <select [(ngModel)]="selectedDepartment" (ngModelChange)="applyFilters()" class="filter-select">
+      <option value="0">All Departments</option>
+      <option *ngFor="let dept of departments" [value]="dept.id">{{dept.name}}</option>
+    </select>
+    <select [(ngModel)]="selectedRole" (ngModelChange)="applyFilters()" class="filter-select">
+      <option value="-1">All Roles</option>
+      <option value="0">Admin</option>
+      <option value="1">User</option>
+    </select>
+  </div>
+
+  <div class="table-container">
+    <table class="users-table">
+      <thead>
+        <tr>
+          <th>User</th>
+          <th>Department</th>
+          <th>Position</th>
+          <th>Role</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of filteredUsers">
+          <td>
+            <div class="user-cell">
+              <div class="avatar" [style.background]="getAvatarColor(user.id)">
+                {{getInitials(user)}}
+              </div>
+              <div>
+                <div class="user-name">{{user.firstName}} {{user.lastName}}</div>
+                <div class="user-email">{{user.email}}</div>
+              </div>
+            </div>
+          </td>
+          <td><span class="dept-badge">{{getDepartmentName(user.departmentId)}}</span></td>
+          <td class="position-cell">{{user.position || '—'}}</td>
+          <td>
+            <span class="role-badge" [ngClass]="getRoleClass(user.role)">
+              {{getRoleLabel(user.role)}}
+            </span>
+          </td>
+          <td>
+            <div class="actions-cell">
+              <button class="btn-edit" (click)="openEditModal(user)">✏</button>
+              <button class="btn-delete" (click)="deleteUser(user.id)">🗑</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="empty-state" *ngIf="filteredUsers.length === 0">
+      <p>Aucun utilisateur trouvé</p>
+    </div>
+
+    <div class="table-footer">
+      <span>Showing {{filteredUsers.length}} of {{allUsers.length}} users</span>
+    </div>
+  </div>
+
+  <!-- MODAL CORRIGÉ - plus petit et boutons intégrés -->
+<div class="modal-overlay" *ngIf="showModal" (click)="closeModal()">
+  <div class="modal-container" (click)="$event.stopPropagation()">
+    <div class="modal-header">
+      <h2>{{ isEditing ? 'Modifier l\'utilisateur' : 'Ajouter un utilisateur' }}</h2>
+      <button class="btn-close-modal" (click)="closeModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label>Prénom *</label>
+          <input type="text" [(ngModel)]="selectedUser.firstName" class="form-input" placeholder="Prénom">
+        </div>
+        <div class="form-group">
+          <label>Nom *</label>
+          <input type="text" [(ngModel)]="selectedUser.lastName" class="form-input" placeholder="Nom">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Email *</label>
+        <input type="email" [(ngModel)]="selectedUser.email" class="form-input" placeholder="email@timsoft.com">
+      </div>
+      <div class="form-group">
+        <label>Email Pro</label>
+        <input type="email" [(ngModel)]="selectedUser.businessEmail" class="form-input" placeholder="email.pro@timsoft.com">
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Poste</label>
+          <input type="text" [(ngModel)]="selectedUser.position" class="form-input" placeholder="Ex: IT Manager">
+        </div>
+        <div class="form-group">
+          <label>Téléphone</label>
+          <input type="text" [(ngModel)]="selectedUser.mobilePhone" class="form-input" placeholder="+216...">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Département *</label>
+          <select [(ngModel)]="selectedUser.departmentId" class="form-input">
+            <option [value]="0">Sélectionner</option>
+            <option *ngFor="let dept of departments" [value]="dept.id">{{ dept.name }}</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Rôle</label>
+          <select [(ngModel)]="selectedUser.role" class="form-input">
+            <option [value]="0">Admin</option>
+            <option [value]="1">User</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" *ngIf="!isEditing">
+        <label>Mot de passe *</label>
+        <input type="password" [(ngModel)]="selectedUser.password" class="form-input" placeholder="Mot de passe">
+      </div>
+
+      <!-- BOUTONS INTÉGRÉS DANS LE FORMULAIRE -->
+      <div class="modal-buttons">
+        <button type="button" class="btn-cancel-modal" (click)="closeModal()">Annuler</button>
+        <button type="button" class="btn-save-modal" (click)="saveUser()">
+          {{ isEditing ? 'Modifier' : 'Ajouter' }}
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

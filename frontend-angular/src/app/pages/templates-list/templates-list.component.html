@@ -1,0 +1,70 @@
+<div class="templates-page">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div>
+      <h1>Email Signature Templates</h1>
+      <p>Create and manage signature templates for your organization</p>
+    </div>
+    <button class="btn-create" routerLink="/templates/create">
+      + Create Template
+    </button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab" [class.active]="activeTab === 'all'" (click)="filterByTab('all')">
+      All Templates <span class="badge">{{allSignatures.length}}</span>
+    </button>
+    <button class="tab" [class.active]="activeTab === 'active'" (click)="filterByTab('active')">
+      Active <span class="badge">{{countByStatus(1)}}</span>
+    </button>
+    <button class="tab" [class.active]="activeTab === 'draft'" (click)="filterByTab('draft')">
+      Draft <span class="badge">{{countByStatus(0)}}</span>
+    </button>
+    <button class="tab" [class.active]="activeTab === 'disabled'" (click)="filterByTab('disabled')">
+      Disabled <span class="badge">{{countByStatus(2)}}</span>
+    </button>
+  </div>
+
+  <!-- Cards -->
+  <div class="cards-grid" *ngIf="filteredSignatures.length > 0">
+    <div class="card" *ngFor="let sig of filteredSignatures">
+     <div class="card-preview" [style.background]="getPreviewColor(sig.typeTemplate)">
+  <div *ngIf="sig.contenuHTML" [innerHTML]="sanitize(sig.contenuHTML)" class="preview-html"></div>
+  <div *ngIf="!sig.contenuHTML" class="preview-placeholder">
+    <div class="preview-avatar"></div>
+    <div class="preview-lines">
+      <div class="line long"></div>
+      <div class="line short"></div>
+      <div class="line medium"></div>
+    </div>
+  </div>
+</div>
+      <div class="card-body">
+        <div class="card-title-row">
+          <h3>{{sig.signatureName}}</h3>
+          <span class="badge-status" [ngClass]="getStatusClass(sig.status)">
+            {{getStatusLabel(sig.status)}}
+          </span>
+        </div>
+        <p class="card-desc">Professional email signature for your organization</p>
+        <div class="card-meta">
+          <span>🏷 {{getTemplateLabel(sig.typeTemplate)}}</span>
+          <span style="margin-left:8px">📅 {{sig.createdAt | date:'dd/MM/yyyy'}}</span>
+        </div>
+        <div class="card-actions">
+          <button class="btn-edit" [routerLink]="['/templates/edit', sig.id]">✏ Edit</button>
+          <button class="btn-icon danger" (click)="deleteSignature(sig.id!)">🗑</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Empty state -->
+  <div class="empty-state" *ngIf="filteredSignatures.length === 0">
+    <p>Aucune signature trouvée</p>
+    <button class="btn-create" routerLink="/templates/create">+ Create Template</button>
+  </div>
+
+</div>

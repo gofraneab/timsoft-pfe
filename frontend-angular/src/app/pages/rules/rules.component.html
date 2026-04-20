@@ -1,0 +1,74 @@
+<div class="rules-page">
+
+  <div class="page-header">
+    <div>
+      <h1>Rules</h1>
+      <p>Gérer les règles d'application des signatures par département</p>
+    </div>
+    <button class="btn-add" (click)="openModal()">+ Add Rule</button>
+  </div>
+
+  <div class="rules-list">
+    <div class="rule-card" *ngFor="let rule of rules">
+      <div class="rule-left">
+        <div class="rule-icon">🛡</div>
+        <div class="rule-info">
+          <div class="rule-name">{{rule.name}}</div>
+          <div class="rule-desc">{{rule.description}}</div>
+          <div class="rule-dept">
+            <span class="dept-tag">🏢 {{rule.department}}</span>
+          </div>
+        </div>
+      </div>
+      <div class="rule-right">
+        <span class="status-badge" [class.active]="rule.active" [class.inactive]="!rule.active">
+          {{rule.active ? 'Active' : 'Inactive'}}
+        </span>
+        <label class="toggle">
+          <input type="checkbox" [checked]="rule.active" (change)="toggleRule(rule)"/>
+          <span class="slider"></span>
+        </label>
+        <button class="btn-delete" (click)="deleteRule(rule.id)">🗑</button>
+      </div>
+    </div>
+
+    <div class="empty-state" *ngIf="rules.length === 0">
+      <p>Aucune règle définie</p>
+      <button class="btn-add" (click)="openModal()">+ Add Rule</button>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="custom-overlay" *ngIf="showModal" (click)="closeModal()">
+    <div class="custom-modal" (click)="$event.stopPropagation()">
+      <div class="custom-modal-header">
+        <h2>Add New Rule</h2>
+        <button class="custom-close" (click)="closeModal()">✕</button>
+      </div>
+      <div class="custom-modal-body">
+        <div class="form-group">
+          <label>Nom de la règle *</label>
+          <input type="text" [(ngModel)]="newRule.name" class="form-input" placeholder="Ex: Signature obligatoire"/>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <textarea [(ngModel)]="newRule.description" class="form-input" rows="3" placeholder="Description..."></textarea>
+        </div>
+        <div class="form-group">
+          <label>Département</label>
+          <input type="text" [(ngModel)]="newRule.department" class="form-input" placeholder="Ex: Informatique"/>
+        </div>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" [(ngModel)]="newRule.active"/> Active
+          </label>
+        </div>
+      </div>
+      <div class="custom-modal-footer">
+        <button class="btn-cancel" (click)="closeModal()">Annuler</button>
+        <button class="btn-save" (click)="addRule()">Ajouter</button>
+      </div>
+    </div>
+  </div>
+
+</div>

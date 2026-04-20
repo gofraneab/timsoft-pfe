@@ -1,0 +1,113 @@
+<div class="settings-page">
+
+  <div class="page-header">
+    <div>
+      <h1>Settings</h1>
+      <p>Configurer les paramètres globaux de l'application</p>
+    </div>
+    <button class="btn-save-main" (click)="saveSettings()">
+      {{saved ? '✅ Sauvegardé !' : '💾 Sauvegarder'}}
+    </button>
+  </div>
+
+  <div class="settings-grid">
+
+    <!-- Company Info -->
+    <div class="settings-card">
+      <div class="card-title">
+        <span>🏢</span>
+        <h3>Informations Entreprise</h3>
+      </div>
+      <div class="form-group">
+        <label>Nom de l'entreprise</label>
+        <input type="text" [(ngModel)]="settings.companyName" class="form-input"/>
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" [(ngModel)]="settings.companyEmail" class="form-input"/>
+      </div>
+      <div class="form-group">
+        <label>Téléphone</label>
+        <input type="text" [(ngModel)]="settings.companyPhone" class="form-input"/>
+      </div>
+      <div class="form-group">
+        <label>Adresse</label>
+        <textarea [(ngModel)]="settings.companyAddress" class="form-input" rows="2"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Site web</label>
+        <input type="text" [(ngModel)]="settings.companyWebsite" class="form-input"/>
+      </div>
+    </div>
+
+    <!-- Signature Settings -->
+    <div class="settings-card">
+      <div class="card-title">
+        <span>✉</span>
+        <h3>Paramètres Signature</h3>
+      </div>
+      <div class="form-group">
+        <label>Template par défaut</label>
+        <select [(ngModel)]="settings.defaultTemplate" class="form-input">
+          <option value="0">Minimal Clean</option>
+          <option value="1">Modern Professional</option>
+        </select>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Application automatique</div>
+          <div class="toggle-desc">Appliquer automatiquement la signature dans Outlook</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" [(ngModel)]="settings.autoApplySignature"/>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Personnalisation utilisateur</div>
+          <div class="toggle-desc">Permettre aux utilisateurs de modifier leur signature</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" [(ngModel)]="settings.allowUserCustomization"/>
+          <span class="slider"></span>
+        </label>
+      </div>
+      <div class="toggle-row">
+        <div>
+          <div class="toggle-label">Notifications email</div>
+          <div class="toggle-desc">Recevoir des notifications lors des changements</div>
+        </div>
+        <label class="toggle">
+          <input type="checkbox" [(ngModel)]="settings.emailNotifications"/>
+          <span class="slider"></span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Logo -->
+    <div class="settings-card full-width">
+      <div class="card-title">
+        <span>🖼</span>
+        <h3>Logo Entreprise</h3>
+      </div>
+      <div class="logo-section">
+        <div class="logo-preview">
+          <div class="logo-placeholder" *ngIf="!settings.logoUrl">
+            <span>ti</span>
+          </div>
+          <img *ngIf="settings.logoUrl" [src]="settings.logoUrl" alt="Logo"/>
+        </div>
+        <div class="logo-info">
+          <div class="form-group">
+            <label>URL du logo</label>
+            <input type="text" [(ngModel)]="settings.logoUrl" class="form-input" placeholder="https://..."/>
+          </div>
+          <p class="hint-text">Format recommandé : PNG ou SVG, fond transparent, 200x60px</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+</div>
