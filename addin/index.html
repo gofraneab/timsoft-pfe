@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Timsoft Signature</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js" type="text/javascript"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; color: #0f1724; }
+
+    .addin-container { padding: 16px; max-width: 400px; }
+
+    .addin-header { display: flex; align-items: center; gap: 12px; padding: 16px; background: #1a1f5e; border-radius: 12px; margin-bottom: 16px; }
+    .logo-box { width: 40px; height: 40px; background: #fff; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-weight: 800; color: #1a1f5e; font-size: 14px; }
+    .addin-header h2 { color: #fff; font-size: 16px; margin-bottom: 2px; }
+    .addin-header p { color: rgba(255,255,255,0.7); font-size: 12px; }
+
+    .user-card { display: flex; align-items: center; gap: 12px; background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
+    .avatar { width: 40px; height: 40px; background: linear-gradient(135deg, #1a1f5e, #2d3491); border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+    .user-info strong { display: block; font-size: 14px; color: #0f1724; }
+    .user-info span { font-size: 12px; color: #6b7280; }
+
+    .preview-card { background: #fff; border: 1px solid #e5e7eb; border-radius: 10px; padding: 14px; margin-bottom: 12px; }
+    .preview-label { font-size: 12px; font-weight: 600; color: #6b7280; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .preview-content { font-size: 13px; line-height: 1.6; }
+
+    .btn-insert { width: 100%; padding: 12px; background: linear-gradient(135deg, #1a1f5e, #2d3491); color: #fff; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-bottom: 8px; transition: opacity 0.15s; }
+    .btn-insert:hover { opacity: 0.88; }
+    .btn-insert:disabled { opacity: 0.55; cursor: not-allowed; }
+
+    .btn-refresh { width: 100%; padding: 10px; background: #fff; color: #1a1f5e; border: 1.5px solid #1a1f5e; border-radius: 10px; font-size: 13px; font-weight: 600; cursor: pointer; transition: background 0.15s; }
+    .btn-refresh:hover { background: #f0f2ff; }
+
+    .loading-state { text-align: center; padding: 40px 20px; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #e5e7eb; border-top-color: #1a1f5e; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .success-card { background: #d1fae5; color: #065f46; border-radius: 10px; padding: 12px; text-align: center; font-size: 13px; font-weight: 600; margin-top: 8px; }
+    .error-card { background: #fee2e2; color: #dc2626; border-radius: 10px; padding: 12px; text-align: center; font-size: 13px; margin-bottom: 12px; }
+
+    .status-badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; background: #d1fae5; color: #065f46; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+
+<div class="addin-container">
+
+  <!-- Header -->
+  <div class="addin-header">
+    <div class="logo-box">ti</div>
+    <div>
+      <h2>Timsoft Signature</h2>
+      <p>Gestion centralisée des signatures</p>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  <div id="loading-state" class="loading-state">
+    <div class="spinner"></div>
+    <p>Chargement de votre signature...</p>
+  </div>
+
+  <!-- Error -->
+  <div id="error-card" class="error-card" style="display:none;">
+    <span id="error-msg"></span>
+    <br><br>
+    <button onclick="loadSignature()" style="background:#dc2626;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;">Réessayer</button>
+  </div>
+
+  <!-- Content -->
+  <div id="main-content" style="display:none;">
+
+    <div class="status-badge">✅ Connecté à Timsoft</div>
+
+    <!-- User info -->
+    <div class="user-card">
+      <div class="avatar" id="user-initials">??</div>
+      <div class="user-info">
+        <strong id="user-name">Chargement...</strong>
+        <span id="user-email">Chargement...</span>
+      </div>
+    </div>
+
+    <!-- Signature preview -->
+    <div class="preview-card">
+      <div class="preview-label">📋 Aperçu de votre signature</div>
+      <div id="signature-preview" class="preview-content"></div>
+    </div>
+
+    <!-- Actions -->
+    <button class="btn-insert" id="btn-insert" onclick="insertSignature()">
+      ✅ Insérer ma signature
+    </button>
+
+    <button class="btn-refresh" onclick="loadSignature()">
+      🔄 Actualiser
+    </button>
+
+    <div id="success-card" class="success-card" style="display:none;">
+      ✅ Signature insérée avec succès !
+    </div>
+
+  </div>
+
+</div>
+
+<script>
+  const API_URL = 'https://timsoft-signature-api-a0g4gseddgccarc4.francecentral-01.azurewebsites.net/api';
+
+  let userName = '';
+  let userEmail = '';
+  let signatureHtml = '';
+
+  Office.onReady(function(info) {
+    if (info.host === Office.HostType.Outlook) {
+      userEmail = Office.context.mailbox.userProfile.emailAddress;
+      userName = Office.context.mailbox.userProfile.displayName;
+    } else {
+      userEmail = 'demo@timsoft-group.com';
+      userName = 'Demo User';
+    }
+
+    const parts = userName.split(' ');
+    const initials = parts.map(p => p[0] || '').join('').substring(0, 2).toUpperCase();
+
+    document.getElementById('user-initials').textContent = initials;
+    document.getElementById('user-name').textContent = userName;
+    document.getElementById('user-email').textContent = userEmail;
+
+    loadSignature();
+  });
+
+  function loadSignature() {
+    document.getElementById('loading-state').style.display = 'block';
+    document.getElementById('main-content').style.display = 'none';
+    document.getElementById('error-card').style.display = 'none';
+
+    const authData = localStorage.getItem('auth_token');
+
+    if (!authData) {
+      showDemoSignature();
+      return;
+    }
+
+    const auth = JSON.parse(authData);
+
+    fetch(`${API_URL}/Users/by-email/${encodeURIComponent(auth.email || userEmail)}`, {
+      headers: { 'Authorization': `Bearer ${auth.token}` }
+    })
+    .then(r => r.json())
+    .then(user => {
+      return fetch(`${API_URL}/Signatures/department/${user.departmentId}/active`, {
+        headers: { 'Authorization': `Bearer ${auth.token}` }
+      });
+    })
+    .then(r => r.json())
+    .then(sig => {
+      if (sig && sig.contenuHTML) {
+        signatureHtml = sig.contenuHTML
+          .replace(/\{\{firstName\}\}/g, auth.firstName || userName.split(' ')[0] || '')
+          .replace(/\{\{lastName\}\}/g, auth.lastName || userName.split(' ')[1] || '')
+          .replace(/\{\{businessEmail\}\}/g, auth.email || userEmail)
+          .replace(/\{\{mobilePhone\}\}/g, auth.mobilePhone || '')
+          .replace(/\{\{position\}\}/g, auth.position || '')
+          .replace(/\{\{companyName\}\}/g, 'Timsoft Group')
+          .replace(/\{\{websiteUrl\}\}/g, 'www.timsoft-group.com');
+
+        document.getElementById('signature-preview').innerHTML = signatureHtml;
+        showContent();
+      } else {
+        showDemoSignature();
+      }
+    })
+    .catch(() => showDemoSignature());
+  }
+
+  function showDemoSignature() {
+    const parts = userName.split(' ');
+    signatureHtml = `
+      <table style="font-family:Segoe UI,sans-serif;border-collapse:collapse;">
+        <tr>
+          <td style="padding:8px 12px;border-left:3px solid #1a1f5e;">
+            <strong style="color:#1a1f5e;font-size:15px;">${userName}</strong><br>
+            <span style="color:#6b7280;font-size:13px;">Timsoft Group</span><br>
+            <span style="color:#374151;font-size:13px;">${userEmail}</span><br>
+            <a href="https://www.timsoft-group.com" style="color:#1a1f5e;font-size:12px;">www.timsoft-group.com</a>
+          </td>
+        </tr>
+      </table>`;
+    document.getElementById('signature-preview').innerHTML = signatureHtml;
+    showContent();
+  }
+
+  function showContent() {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('main-content').style.display = 'block';
+  }
+
+  function showError(msg) {
+    document.getElementById('loading-state').style.display = 'none';
+    document.getElementById('error-msg').textContent = msg;
+    document.getElementById('error-card').style.display = 'block';
+  }
+
+  function insertSignature() {
+    if (!signatureHtml) return;
+
+    const btn = document.getElementById('btn-insert');
+    btn.disabled = true;
+    btn.textContent = 'Insertion...';
+
+    try {
+      Office.context.mailbox.item.body.setSignatureAsync(
+        signatureHtml,
+        { coercionType: Office.CoercionType.Html },
+        function(result) {
+          if (result.status === Office.AsyncResultStatus.Succeeded) {
+            document.getElementById('success-card').style.display = 'block';
+            btn.textContent = '✅ Insérer ma signature';
+            btn.disabled = false;
+            setTimeout(function() {
+              document.getElementById('success-card').style.display = 'none';
+            }, 3000);
+          } else {
+            showError('Erreur lors de l\'insertion de la signature.');
+            btn.textContent = '✅ Insérer ma signature';
+            btn.disabled = false;
+          }
+        }
+      );
+    } catch(e) {
+      showError('Office.js non disponible hors Outlook.');
+      btn.textContent = '✅ Insérer ma signature';
+      btn.disabled = false;
+    }
+  }
+</script>
+
+</body>
+</html>
