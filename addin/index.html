@@ -106,7 +106,10 @@
 </div>
 
 <script>
-  const API_URL = 'https://timsoft-signature-api-a0g4gseddgccarc4.francecentral-01.azurewebsites.net/api';
+  const API_URLS = [
+    'https://timsoft-signature-api-a0g4gseddgccarc4.francecentral-01.azurewebsites.net/api',
+    'https://cartoon-revoke-music.ngrok-free.dev/api'
+  ];
 
   let userName = '';
   let userEmail = '';
@@ -145,34 +148,65 @@
 
     const auth = JSON.parse(authData);
 
-    fetch(`${API_URL}/Users/by-email/${encodeURIComponent(auth.email || userEmail)}`, {
-      headers: { 'Authorization': `Bearer ${auth.token}` }
-    })
-    .then(r => r.json())
-    .then(user => {
-      return fetch(`${API_URL}/Signatures/department/${user.departmentId}/active`, {
-        headers: { 'Authorization': `Bearer ${auth.token}` }
-      });
-    })
-    .then(r => r.json())
-    .then(sig => {
-      if (sig && sig.contenuHTML) {
-        signatureHtml = sig.contenuHTML
-          .replace(/\{\{firstName\}\}/g, auth.firstName || userName.split(' ')[0] || '')
-          .replace(/\{\{lastName\}\}/g, auth.lastName || userName.split(' ')[1] || '')
-          .replace(/\{\{businessEmail\}\}/g, auth.email || userEmail)
-          .replace(/\{\{mobilePhone\}\}/g, auth.mobilePhone || '')
-          .replace(/\{\{position\}\}/g, auth.position || '')
-          .replace(/\{\{companyName\}\}/g, 'Timsoft Group')
-          .replace(/\{\{websiteUrl\}\}/g, 'www.timsoft-group.com');
+    fetchUserAndSignature(auth, userEmail)
+      .then(sig => {
+        if (sig && sig.contenuHTML) {
+          signatureHtml = sig.contenuHTML
+            .replace(/\{\{firstName\}\}/g, auth.firstName || userName.split(' ')[0] || '')
+            .replace(/\{\{lastName\}\}/g, auth.lastName || userName.split(' ')[1] || '')
+            .replace(/\{\{businessEmail\}\}/g, auth.email || userEmail)
+            .replace(/\{\{mobilePhone\}\}/g, auth.mobilePhone || '')
+            .replace(/\{\{position\}\}/g, auth.position || '')
+            .replace(/\{\{companyName\}\}/g, 'Timsoft Group')
+            .replace(/\{\{websiteUrl\}\}/g, 'www.timsoft-group.com');
 
-        document.getElementById('signature-preview').innerHTML = signatureHtml;
-        showContent();
-      } else {
-        showDemoSignature();
+          document.getElementById('signature-preview').innerHTML = signatureHtml;
+          showContent();
+        } else {
+          showDemoSignature();
+        }
+      })
+      .catch(() => showDemoSignature());
+  }
+
+  async function fetchUserAndSignature(auth, email) {
+    const userPath = `/Users/by-email/${encodeURIComponent(auth.email || email)}`;
+    const signaturePathForUser = (departmentId) => `/Signatures/department/${departmentId}/active`;
+
+    for (const apiUrl of API_URLS) {
+      try {
+        const userResponse = await fetch(`${apiUrl}${userPath}`, {
+          headers: { 'Authorization': `Bearer ${auth.token}` }
+        });
+
+        if (!userResponse.ok) {
+          if ([502, 503, 504].includes(userResponse.status)) {
+            continue;
+          }
+          throw new Error(`HTTP ${userResponse.status}`);
+        }
+
+        const user = await userResponse.json();
+        const signatureResponse = await fetch(`${apiUrl}${signaturePathForUser(user.departmentId)}`, {
+          headers: { 'Authorization': `Bearer ${auth.token}` }
+        });
+
+        if (!signatureResponse.ok) {
+          if ([502, 503, 504].includes(signatureResponse.status)) {
+            continue;
+          }
+          throw new Error(`HTTP ${signatureResponse.status}`);
+        }
+
+        return signatureResponse.json();
+      } catch (error) {
+        if (apiUrl === API_URLS[API_URLS.length - 1]) {
+          throw error;
+        }
       }
-    })
-    .catch(() => showDemoSignature());
+    }
+
+    throw new Error('All API endpoints failed');
   }
 
   function showDemoSignature() {
