@@ -134,41 +134,41 @@
     loadSignature();
   });
 
-  function loadSignature() {
-    document.getElementById('loading-state').style.display = 'block';
-    document.getElementById('main-content').style.display = 'none';
-    document.getElementById('error-card').style.display = 'none';
-
-    const authData = localStorage.getItem('auth_token');
-
-    if (!authData) {
-      showDemoSignature();
-      return;
-    }
-
-    const auth = JSON.parse(authData);
-
-    fetchUserAndSignature(auth, userEmail)
-      .then(sig => {
-        if (sig && sig.contenuHTML) {
-          signatureHtml = sig.contenuHTML
-            .replace(/\{\{firstName\}\}/g, auth.firstName || userName.split(' ')[0] || '')
-            .replace(/\{\{lastName\}\}/g, auth.lastName || userName.split(' ')[1] || '')
-            .replace(/\{\{businessEmail\}\}/g, auth.email || userEmail)
-            .replace(/\{\{mobilePhone\}\}/g, auth.mobilePhone || '')
-            .replace(/\{\{position\}\}/g, auth.position || '')
-            .replace(/\{\{companyName\}\}/g, 'Timsoft Group')
-            .replace(/\{\{websiteUrl\}\}/g, 'www.timsoft-group.com');
-
-          document.getElementById('signature-preview').innerHTML = signatureHtml;
-          showContent();
+  async function loadGraphPhoto() {
+  return new Promise((resolve) => {
+    // Récupère le token Exchange depuis Outlook directement
+    Office.context.mailbox.getCallbackTokenAsync(
+      { isRest: true },
+      async function(result) {
+        if (result.status === Office.AsyncResultStatus.Succeeded) {
+          const token = result.value;
+          try {
+            // Utilise le token pour appeler Graph
+            const response = await fetch(
+              'https://outlook.office.com/api/v2.0/me/photo/$value',
+              {
+                headers: {
+                  'Authorization': `Bearer ${token}`,
+                  'Accept': 'image/jpeg'
+                }
+              }
+            );
+            if (response.ok) {
+              const blob = await response.blob();
+              resolve(URL.createObjectURL(blob));
+            } else {
+              resolve(null);
+            }
+          } catch(e) {
+            resolve(null);
+          }
         } else {
-          showDemoSignature();
+          resolve(null);
         }
-      })
-      .catch(() => showDemoSignature());
-  }
-
+      }
+    );
+  });
+}
   async function fetchUserAndSignature(auth, email) {
     const userPath = `/Users/by-email/${encodeURIComponent(auth.email || email)}`;
     const signaturePathForUser = (departmentId) => `/Signatures/department/${departmentId}/active`;
