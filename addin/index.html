@@ -238,44 +238,37 @@
   }
 
   function insertSignature() {
-  if (!signatureHtml) return;
-  const btn = document.getElementById('btn-insert');
-  btn.disabled = true;
-  btn.textContent = '⏳ Insertion...';
+    if (!signatureHtml) return;
 
-  try {
-    if (Office.context.mailbox.item.body.setSignatureAsync) {
+    const btn = document.getElementById('btn-insert');
+    btn.disabled = true;
+    btn.textContent = 'Insertion...';
+
+    try {
       Office.context.mailbox.item.body.setSignatureAsync(
         signatureHtml,
         { coercionType: Office.CoercionType.Html },
-        function(result) { handleInsertResult(result, btn); }
+        function(result) {
+          if (result.status === Office.AsyncResultStatus.Succeeded) {
+            document.getElementById('success-card').style.display = 'block';
+            btn.textContent = '✅ Insérer ma signature';
+            btn.disabled = false;
+            setTimeout(function() {
+              document.getElementById('success-card').style.display = 'none';
+            }, 3000);
+          } else {
+            showError('Erreur lors de l\'insertion de la signature.');
+            btn.textContent = '✅ Insérer ma signature';
+            btn.disabled = false;
+          }
+        }
       );
-    } else {
-      Office.context.mailbox.item.body.prependAsync(
-        signatureHtml,
-        { coercionType: Office.CoercionType.Html },
-        function(result) { handleInsertResult(result, btn); }
-      );
+    } catch(e) {
+      showError('Office.js non disponible hors Outlook.');
+      btn.textContent = '✅ Insérer ma signature';
+      btn.disabled = false;
     }
-  } catch(e) {
-    showError('Office.js non disponible hors Outlook.');
-    btn.disabled = false;
-    btn.textContent = '✅ Insérer ma signature';
   }
-}
-
-function handleInsertResult(result, btn) {
-  btn.disabled = false;
-  btn.textContent = '✅ Insérer ma signature';
-  if (result.status === Office.AsyncResultStatus.Succeeded) {
-    document.getElementById('success-card').style.display = 'block';
-    setTimeout(() => {
-      document.getElementById('success-card').style.display = 'none';
-    }, 3000);
-  } else {
-    showError('Erreur : ' + result.error.message);
-  }
-}
 </script>
 
 </body>
