@@ -7,14 +7,14 @@
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; color: #0f1724; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; }
     .container { padding: 14px; max-width: 380px; }
 
     .header { display: flex; align-items: center; gap: 10px; padding: 14px 16px;
       background: #1a1f5e; border-radius: 12px; margin-bottom: 14px; }
     .logo { width: 36px; height: 36px; background: #fff; border-radius: 8px;
       display: flex; align-items: center; justify-content: center;
-      font-weight: 800; color: #1a1f5e; font-size: 13px; flex-shrink: 0; }
+      font-weight: 800; color: #1a1f5e; font-size: 13px; }
     .header h2 { color: #fff; font-size: 15px; margin-bottom: 1px; }
     .header p { color: rgba(255,255,255,0.65); font-size: 11px; }
 
@@ -23,11 +23,6 @@
       border-top-color: #1a1f5e; border-radius: 50%;
       animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    .error-box { background: #fee2e2; color: #dc2626; border-radius: 10px;
-      padding: 12px; margin-bottom: 12px; font-size: 13px; }
-    .error-box button { margin-top: 8px; background: #dc2626; color: #fff;
-      border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; }
 
     .user-card { display: flex; align-items: center; gap: 12px;
       background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
@@ -47,7 +42,6 @@
       border-radius: 10px; padding: 14px; margin-bottom: 12px; }
     .preview-label { font-size: 11px; font-weight: 700; color: #6b7280;
       margin-bottom: 10px; text-transform: uppercase; }
-    .preview-content { font-size: 12px; overflow-x: auto; }
 
     .btn-primary { width: 100%; padding: 12px;
       background: linear-gradient(135deg, #1a1f5e, #2d3491);
@@ -62,6 +56,8 @@
     .success { background: #d1fae5; color: #065f46; border-radius: 10px;
       padding: 12px; text-align: center; font-size: 13px;
       font-weight: 600; margin-top: 8px; }
+    .error-box { background: #fee2e2; color: #dc2626; border-radius: 10px;
+      padding: 12px; margin-bottom: 12px; font-size: 13px; }
   </style>
 </head>
 <body>
@@ -75,17 +71,21 @@
     </div>
   </div>
 
+  <!-- Loading -->
   <div id="loading" class="loading">
     <div class="spinner"></div>
-    <p style="font-size:13px;color:#6b7280;">Chargement de votre signature...</p>
+    <p style="font-size:13px;color:#6b7280;">Chargement depuis Outlook...</p>
   </div>
 
+  <!-- Error -->
   <div id="error-box" class="error-box" style="display:none;">
     <span id="error-msg"></span><br>
-    <button onclick="init()">Réessayer</button>
+    <button onclick="init()" style="margin-top:8px;background:#dc2626;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;">Réessayer</button>
   </div>
 
+  <!-- Content -->
   <div id="content" style="display:none;">
+
     <div class="user-card">
       <div class="avatar" id="avatar">
         <span class="avatar-txt" id="initials">??</span>
@@ -93,13 +93,13 @@
       <div class="user-info">
         <strong id="display-name">...</strong>
         <small id="display-email">...</small>
-        <div class="badge">✅ Connecté à Timsoft</div>
+        <div class="badge">✅ Profil Outlook chargé</div>
       </div>
     </div>
 
     <div class="preview-card">
       <div class="preview-label">📋 Aperçu de votre signature</div>
-      <div id="preview" class="preview-content"></div>
+      <div id="preview"></div>
     </div>
 
     <button class="btn-primary" id="btn-insert" onclick="insertSignature()">
@@ -107,247 +107,198 @@
     </button>
     <button class="btn-secondary" onclick="init()">🔄 Actualiser</button>
     <div id="success" class="success" style="display:none;">
-      ✅ Signature insérée avec succès !
+      ✅ Signature insérée dans votre email !
     </div>
-  </div>
 
+  </div>
 </div>
 
 <script>
-  const API_URL = 'https://timsoft-signature-api-a0g4gseddgccarc4.francecentral-01.azurewebsites.net/api';
-
-  let userName      = '';
-  let userEmail     = '';
+  // ── Variables globales ────────────────────────────────────────
+  let userName    = '';
+  let userEmail   = '';
   let signatureHtml = '';
 
-  // ── OFFICE READY ─────────────────────────────────────────────
-  Office.onReady(function(info) {
+  // ── Office Ready ─────────────────────────────────────────────
+  Office.onReady(async function(info) {
     if (info.host === Office.HostType.Outlook) {
+      // Récupérer les infos depuis le profil Outlook directement
       userEmail = Office.context.mailbox.userProfile.emailAddress;
       userName  = Office.context.mailbox.userProfile.displayName;
     } else {
-      // Mode démo navigateur
+      // Mode démo dans le navigateur
       userEmail = 'demo@timsoft-group.com';
       userName  = 'Demo User';
     }
-    init();
+    await init();
   });
 
-  // ── INIT ──────────────────────────────────────────────────────
+  // ── Init ──────────────────────────────────────────────────────
   async function init() {
     showLoading();
 
-    // Mettre à jour carte utilisateur
-    const initials = userName.split(' ')
-      .map(p => p[0] || '').join('').substring(0, 2).toUpperCase();
+    // Mettre à jour la carte utilisateur
+    const initials = getInitials(userName);
     document.getElementById('initials').textContent      = initials;
     document.getElementById('display-name').textContent  = userName;
     document.getElementById('display-email').textContent = userEmail;
 
-    // Charger photo + signature
-    const photoUrl = await loadPhoto();
+    // Récupérer la photo depuis Outlook avec timeout 3s
+    const photoUrl = await loadPhotoFromOutlook();
 
-    // Mettre à jour avatar
+    // Mettre à jour l'avatar
     if (photoUrl) {
       document.getElementById('avatar').innerHTML =
-        `<img src="${photoUrl}" alt="${userName}" onerror="this.parentElement.innerHTML='<span class=\\'avatar-txt\\'>${initials}</span>'"/>`;
+        `<img src="${photoUrl}" alt="${userName}"
+          onerror="this.parentElement.innerHTML='<span class=\\'avatar-txt\\'>${initials}</span>'"/>`;
     }
 
-    await loadSignature(photoUrl);
+    // Construire la signature avec les infos Outlook + photo + QR
+    buildSignature(photoUrl);
+
     showContent();
   }
 
-  // ── PHOTO AVEC TIMEOUT 3s ────────────────────────────────────
-  function loadPhoto() {
+  // ── Récupérer photo depuis Outlook (getCallbackTokenAsync) ────
+  function loadPhotoFromOutlook() {
     return new Promise((resolve) => {
-      const timer = setTimeout(() => resolve(null), 3000);
+      // Timeout 3 secondes max
+      const timer = setTimeout(() => {
+        console.log('Photo timeout — utilisation initiales');
+        resolve(null);
+      }, 3000);
 
       try {
-        // Méthode 1 : getCallbackTokenAsync (dans Outlook)
-        if (Office.context.mailbox && Office.context.mailbox.getCallbackTokenAsync) {
-          Office.context.mailbox.getCallbackTokenAsync(
-            { isRest: true },
-            async function(result) {
-              clearTimeout(timer);
-              if (result.status !== Office.AsyncResultStatus.Succeeded) {
-                return resolve(await loadPhotoFallback());
-              }
-              try {
-                const restUrl = Office.context.mailbox.restUrl
-                  || 'https://outlook.office.com/api';
-                const res = await fetch(
-                  `${restUrl}/v2.0/me/photo/$value`,
-                  { headers: { 'Authorization': `Bearer ${result.value}` } }
-                );
-                if (res.ok) {
-                  const blob = await res.blob();
-                  resolve(URL.createObjectURL(blob));
-                } else {
-                  resolve(await loadPhotoFallback());
-                }
-              } catch(e) {
-                resolve(await loadPhotoFallback());
-              }
+        Office.context.mailbox.getCallbackTokenAsync(
+          { isRest: true },
+          async function(result) {
+            clearTimeout(timer);
+
+            if (result.status !== Office.AsyncResultStatus.Succeeded) {
+              return resolve(null);
             }
-          );
-        } else {
-          // Hors Outlook → fallback
-          clearTimeout(timer);
-          loadPhotoFallback().then(resolve);
-        }
+
+            try {
+              // URL REST d'Outlook pour la photo
+              const restUrl = Office.context.mailbox.restUrl
+                || 'https://outlook.office.com/api';
+
+              const response = await fetch(
+                `${restUrl}/v2.0/me/photo/$value`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${result.value}`,
+                    'Accept': 'image/jpeg'
+                  }
+                }
+              );
+
+              if (response.ok) {
+                const blob = await response.blob();
+                resolve(URL.createObjectURL(blob));
+              } else {
+                resolve(null);
+              }
+            } catch(e) {
+              resolve(null);
+            }
+          }
+        );
       } catch(e) {
         clearTimeout(timer);
-        loadPhotoFallback().then(resolve);
+        resolve(null);
       }
     });
   }
 
-  // ── PHOTO FALLBACK depuis la base de données ──────────────────
-  async function loadPhotoFallback() {
-    try {
-      const authData = localStorage.getItem('auth_token');
-      if (!authData) return null;
+  // ── Construire la signature avec photo + QR ───────────────────
+  function buildSignature(photoUrl) {
+    const parts     = userName.trim().split(' ');
+    const firstName = parts[0] || '';
+    const lastName  = parts.slice(1).join(' ') || '';
+    const initials  = getInitials(userName);
 
-      const auth = JSON.parse(authData);
-      const res  = await fetch(
-        `${API_URL}/Users/by-email/${encodeURIComponent(userEmail || auth.email)}`,
-        { headers: { 'Authorization': `Bearer ${auth.token}` } }
-      );
-      if (res.ok) {
-        const user = await res.json();
-        return user.photoUrl || null;
-      }
-    } catch(e) {}
-    return null;
-  }
+    // Photo element
+    const photoEl = photoUrl
+      ? `<img src="${photoUrl}" width="65" height="65"
+           style="border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;display:block;"
+           alt="${userName}"
+           onerror="this.outerHTML='<div style=\\'width:65px;height:65px;border-radius:50%;background:linear-gradient(135deg,#1a1f5e,#2d3491);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:22px;\\'>${initials}</div>'"
+        />`
+      : `<div style="width:65px;height:65px;border-radius:50%;
+           background:linear-gradient(135deg,#1a1f5e,#2d3491);
+           display:flex;align-items:center;justify-content:center;
+           color:#fff;font-weight:700;font-size:22px;">${initials}</div>`;
 
-  // ── CHARGER SIGNATURE ─────────────────────────────────────────
-  async function loadSignature(photoUrl) {
-    try {
-      // Appel direct à l'endpoint by-email
-      const res = await fetch(
-        `${API_URL}/Signatures/by-email/${encodeURIComponent(userEmail)}/active`
-      );
+    // QR Code avec vCard
+    const vcard = buildVCard(firstName, lastName);
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(vcard)}`;
 
-      if (res.ok) {
-        const data = await res.json();
-        buildSignatureWithPhotoAndQr(data.generatedHtml, photoUrl);
-        return;
-      }
-    } catch(e) {}
-
-    // Fallback : signature par défaut
-    buildDefaultSignature(photoUrl);
-  }
-
-  // ── CONSTRUIRE SIGNATURE AVEC PHOTO + QR ─────────────────────
-  function buildSignatureWithPhotoAndQr(html, photoUrl) {
-    const qrUrl    = buildQrUrl();
-    const photoEl  = buildPhotoEl(photoUrl);
-
-    // Si le template contient déjà {{photoUrl}} ou {{qrCode}}
-    let finalHtml = html
-      .replace(/\{\{photoUrl\}\}/g, photoUrl || '')
-      .replace(/\{\{qrCode\}\}/g, qrUrl);
-
-    // Si le template ne contient pas de photo → on enveloppe
-    if (!finalHtml.includes('<img') && !finalHtml.includes('photoUrl')) {
-      finalHtml = wrapWithPhotoAndQr(finalHtml, photoEl, qrUrl);
-    }
-
-    signatureHtml = finalHtml;
-    document.getElementById('preview').innerHTML = finalHtml;
-  }
-
-  // ── SIGNATURE PAR DÉFAUT ──────────────────────────────────────
-  function buildDefaultSignature(photoUrl) {
-    const qrUrl   = buildQrUrl();
-    const photoEl = buildPhotoEl(photoUrl);
-    const name    = userName || userEmail;
-    const parts   = name.split(' ');
-    const fn      = parts[0] || '';
-    const ln      = parts[1] || '';
-
+    // HTML de la signature
     signatureHtml = `
-<table style="font-family:Segoe UI,Arial,sans-serif;border-collapse:collapse;max-width:520px;">
+<table style="font-family:Segoe UI,Arial,sans-serif;border-collapse:collapse;max-width:540px;">
   <tr>
-    <td style="padding-right:14px;vertical-align:middle;">${photoEl}</td>
-    <td style="padding:0 14px;vertical-align:middle;border-left:3px solid #1a1f5e;">
-      <p style="margin:0 0 2px;font-size:15px;font-weight:700;color:#1a1f5e;">${fn} ${ln}</p>
-      <p style="margin:0 0 2px;font-size:12px;color:#374151;">
-        ✉&nbsp;<a href="mailto:${userEmail}" style="color:#374151;text-decoration:none;">${userEmail}</a>
+
+    <!-- Photo -->
+    <td style="padding-right:16px;vertical-align:middle;">
+      ${photoEl}
+    </td>
+
+    <!-- Informations -->
+    <td style="padding:0 16px;vertical-align:middle;border-left:3px solid #1a1f5e;">
+      <p style="margin:0 0 3px;font-size:16px;font-weight:700;color:#1a1f5e;">
+        ${firstName} ${lastName}
       </p>
-      <p style="margin:4px 0 0;font-size:12px;">
-        <a href="https://www.timsoft-group.com" style="color:#1a1f5e;font-weight:600;text-decoration:none;">
+      <p style="margin:0 0 8px;font-size:12px;color:#6b7280;">
+        Timsoft Group
+      </p>
+      <p style="margin:0 0 3px;font-size:12px;color:#374151;">
+        ✉&nbsp;
+        <a href="mailto:${userEmail}"
+          style="color:#374151;text-decoration:none;">${userEmail}</a>
+      </p>
+      <p style="margin:5px 0 0;font-size:12px;">
+        <a href="https://www.timsoft-group.com"
+          style="color:#1a1f5e;font-weight:600;text-decoration:none;">
           www.timsoft-group.com
         </a>
       </p>
-      <p style="margin:6px 0 0;font-size:11px;color:#9ca3af;font-style:italic;">Timsoft Group</p>
     </td>
-    <td style="padding-left:14px;vertical-align:middle;text-align:center;">
-      <img src="${qrUrl}" width="75" height="75" alt="QR"
-        style="border:1px solid #e5e7eb;border-radius:6px;display:block;"/>
-      <p style="margin:4px 0 0;font-size:9px;color:#9ca3af;">Scanner pour<br>ajouter le contact</p>
+
+    <!-- QR Code -->
+    <td style="padding-left:16px;vertical-align:middle;text-align:center;">
+      <img src="${qrUrl}" width="80" height="80" alt="QR Code"
+        style="border:1px solid #e5e7eb;border-radius:8px;display:block;"/>
+      <p style="margin:5px 0 0;font-size:9px;color:#9ca3af;line-height:1.4;">
+        Scanner pour<br>ajouter le contact
+      </p>
     </td>
+
   </tr>
 </table>`;
 
+    // Afficher l'aperçu
     document.getElementById('preview').innerHTML = signatureHtml;
   }
 
-  // ── ENVELOPPER avec photo + QR ────────────────────────────────
-  function wrapWithPhotoAndQr(innerHtml, photoEl, qrUrl) {
-    return `
-<table style="font-family:Segoe UI,Arial,sans-serif;border-collapse:collapse;max-width:560px;">
-  <tr>
-    <td style="padding-right:14px;vertical-align:middle;">${photoEl}</td>
-    <td style="vertical-align:middle;">${innerHtml}</td>
-    <td style="padding-left:14px;vertical-align:middle;text-align:center;">
-      <img src="${qrUrl}" width="75" height="75" alt="QR"
-        style="border:1px solid #e5e7eb;border-radius:6px;display:block;"/>
-      <p style="margin:4px 0 0;font-size:9px;color:#9ca3af;">Scanner pour<br>ajouter le contact</p>
-    </td>
-  </tr>
-</table>`;
-  }
-
-  // ── HELPERS ───────────────────────────────────────────────────
-  function buildPhotoEl(photoUrl) {
-    const initials = userName.split(' ')
-      .map(p => p[0]||'').join('').substring(0,2).toUpperCase();
-
-    if (photoUrl) {
-      return `<img src="${photoUrl}" width="60" height="60"
-        style="border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;"
-        alt="${userName}"
-        onerror="this.outerHTML='<div style=\\'width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#1a1f5e,#2d3491);display:inline-flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:20px;\\'>${initials}</div>'"
-      />`;
-    }
-    return `<div style="width:60px;height:60px;border-radius:50%;
-      background:linear-gradient(135deg,#1a1f5e,#2d3491);
-      display:inline-flex;align-items:center;justify-content:center;
-      color:#fff;font-weight:700;font-size:20px;">${initials}</div>`;
-  }
-
-  function buildQrUrl() {
-    const parts = userName.split(' ');
-    const vcard = [
+  // ── Construire vCard pour le QR ───────────────────────────────
+  function buildVCard(firstName, lastName) {
+    return [
       'BEGIN:VCARD',
       'VERSION:3.0',
-      `N:${parts[1]||''};${parts[0]||''};;;`,
-      `FN:${userName}`,
+      `N:${lastName};${firstName};;;`,
+      `FN:${firstName} ${lastName}`,
       'ORG:Timsoft Group',
       `EMAIL:${userEmail}`,
       'URL:https://www.timsoft-group.com',
       'END:VCARD'
     ].join('\n');
-
-    return `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(vcard)}`;
   }
 
-  // ── INSERT SIGNATURE ──────────────────────────────────────────
+  // ── Insérer la signature dans Outlook ────────────────────────
   function insertSignature() {
     if (!signatureHtml) return;
+
     const btn = document.getElementById('btn-insert');
     btn.disabled    = true;
     btn.textContent = '⏳ Insertion...';
@@ -386,7 +337,12 @@
     }
   }
 
-  // ── UI HELPERS ────────────────────────────────────────────────
+  // ── Helpers ───────────────────────────────────────────────────
+  function getInitials(name) {
+    return (name || '').split(' ')
+      .map(p => p[0] || '').join('').substring(0, 2).toUpperCase() || '??';
+  }
+
   function showLoading() {
     document.getElementById('loading').style.display   = 'block';
     document.getElementById('content').style.display   = 'none';
@@ -398,10 +354,10 @@
     document.getElementById('error-box').style.display = 'none';
   }
   function showError(msg) {
-    document.getElementById('loading').style.display    = 'none';
-    document.getElementById('content').style.display    = 'none';
-    document.getElementById('error-box').style.display  = 'block';
-    document.getElementById('error-msg').textContent    = msg;
+    document.getElementById('loading').style.display   = 'none';
+    document.getElementById('content').style.display   = 'none';
+    document.getElementById('error-box').style.display = 'block';
+    document.getElementById('error-msg').textContent   = msg;
   }
 </script>
 </body>
