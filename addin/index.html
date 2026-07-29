@@ -9,7 +9,6 @@
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { font-family: 'Segoe UI', sans-serif; background: #f8fafc; }
     .container { padding: 14px; max-width: 380px; }
-
     .header { display: flex; align-items: center; gap: 10px; padding: 14px 16px;
       background: #1a1f5e; border-radius: 12px; margin-bottom: 14px; }
     .logo { width: 36px; height: 36px; background: #fff; border-radius: 8px;
@@ -17,13 +16,11 @@
       font-weight: 800; color: #1a1f5e; font-size: 13px; }
     .header h2 { color: #fff; font-size: 15px; margin-bottom: 1px; }
     .header p { color: rgba(255,255,255,0.65); font-size: 11px; }
-
     .loading { text-align: center; padding: 40px 20px; }
     .spinner { width: 30px; height: 30px; border: 3px solid #e5e7eb;
       border-top-color: #1a1f5e; border-radius: 50%;
       animation: spin 0.8s linear infinite; margin: 0 auto 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
     .user-card { display: flex; align-items: center; gap: 12px;
       background: #fff; border: 1px solid #e5e7eb; border-radius: 10px;
       padding: 12px; margin-bottom: 12px; }
@@ -37,12 +34,10 @@
     .badge { display: inline-block; background: #d1fae5; color: #065f46;
       font-size: 10px; font-weight: 700; padding: 2px 8px;
       border-radius: 999px; margin-top: 3px; }
-
     .preview-card { background: #fff; border: 1px solid #e5e7eb;
       border-radius: 10px; padding: 14px; margin-bottom: 12px; }
     .preview-label { font-size: 11px; font-weight: 700; color: #6b7280;
       margin-bottom: 10px; text-transform: uppercase; }
-
     .btn-primary { width: 100%; padding: 12px;
       background: linear-gradient(135deg, #1a1f5e, #2d3491);
       color: #fff; border: none; border-radius: 10px;
@@ -62,7 +57,6 @@
 </head>
 <body>
 <div class="container">
-
   <div class="header">
     <div class="logo">ti</div>
     <div>
@@ -71,21 +65,17 @@
     </div>
   </div>
 
-  <!-- Loading -->
   <div id="loading" class="loading">
     <div class="spinner"></div>
     <p style="font-size:13px;color:#6b7280;">Chargement depuis Outlook...</p>
   </div>
 
-  <!-- Error -->
   <div id="error-box" class="error-box" style="display:none;">
     <span id="error-msg"></span><br>
     <button onclick="init()" style="margin-top:8px;background:#dc2626;color:#fff;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;">Réessayer</button>
   </div>
 
-  <!-- Content -->
   <div id="content" style="display:none;">
-
     <div class="user-card">
       <div class="avatar" id="avatar">
         <span class="avatar-txt" id="initials">??</span>
@@ -109,64 +99,48 @@
     <div id="success" class="success" style="display:none;">
       ✅ Signature insérée dans votre email !
     </div>
-
   </div>
 </div>
 
 <script>
-  // ── Variables globales ────────────────────────────────────────
-  let userName    = '';
-  let userEmail   = '';
+  let userName      = '';
+  let userEmail     = '';
   let signatureHtml = '';
 
-  // ── Office Ready ─────────────────────────────────────────────
   Office.onReady(async function(info) {
     if (info.host === Office.HostType.Outlook) {
-      // Récupérer les infos depuis le profil Outlook directement
       userEmail = Office.context.mailbox.userProfile.emailAddress;
       userName  = Office.context.mailbox.userProfile.displayName;
     } else {
-      // Mode démo dans le navigateur
       userEmail = 'demo@timsoft-group.com';
       userName  = 'Demo User';
     }
     await init();
   });
 
-  // ── Init ──────────────────────────────────────────────────────
   async function init() {
     showLoading();
-
-    // Mettre à jour la carte utilisateur
     const initials = getInitials(userName);
     document.getElementById('initials').textContent      = initials;
     document.getElementById('display-name').textContent  = userName;
     document.getElementById('display-email').textContent = userEmail;
 
-    // Récupérer la photo depuis Outlook avec timeout 3s
     const photoUrl = await loadPhotoFromOutlook();
 
-    // Mettre à jour l'avatar
     if (photoUrl) {
       document.getElementById('avatar').innerHTML =
         `<img src="${photoUrl}" alt="${userName}"
           onerror="this.parentElement.innerHTML='<span class=\\'avatar-txt\\'>${initials}</span>'"/>`;
     }
 
-    // Construire la signature avec les infos Outlook + photo + QR
     buildSignature(photoUrl);
-
     showContent();
   }
 
-  // ── Récupérer photo depuis Outlook (getCallbackTokenAsync) ────
+  // ── Photo avec 3 URLs en cascade + timeout 5s ─────────────────
   function loadPhotoFromOutlook() {
     return new Promise((resolve) => {
-      // Timeout 3 secondes max
-      const timer = setTimeout(() => {
-        console.log('Photo timeout — utilisation initiales');
-        resolve(null);
-      }, 3000);
+      const timer = setTimeout(() => resolve(null), 5000);
 
       try {
         Office.context.mailbox.getCallbackTokenAsync(
@@ -178,30 +152,32 @@
               return resolve(null);
             }
 
-            try {
-              // URL REST d'Outlook pour la photo
-              const restUrl = Office.context.mailbox.restUrl
-                || 'https://outlook.office.com/api';
+            const token   = result.value;
+            const restUrl = Office.context.mailbox.restUrl
+              || 'https://outlook.office.com/api';
 
-              const response = await fetch(
-                `${restUrl}/v2.0/me/photo/$value`,
-                {
-                  headers: {
-                    'Authorization': `Bearer ${result.value}`,
-                    'Accept': 'image/jpeg'
-                  }
+            // Essaie 3 URLs différentes
+            const urls = [
+              `${restUrl}/v2.0/me/photo/$value`,
+              `https://outlook.office365.com/api/v2.0/me/photo/$value`,
+              `https://graph.microsoft.com/v1.0/me/photo/$value`,
+            ];
+
+            for (const url of urls) {
+              try {
+                const res = await fetch(url, {
+                  headers: { 'Authorization': `Bearer ${token}` }
+                });
+                if (res.ok) {
+                  const blob = await res.blob();
+                  return resolve(URL.createObjectURL(blob));
                 }
-              );
-
-              if (response.ok) {
-                const blob = await response.blob();
-                resolve(URL.createObjectURL(blob));
-              } else {
-                resolve(null);
+              } catch(e) {
+                continue;
               }
-            } catch(e) {
-              resolve(null);
             }
+
+            resolve(null);
           }
         );
       } catch(e) {
@@ -211,14 +187,12 @@
     });
   }
 
-  // ── Construire la signature avec photo + QR ───────────────────
   function buildSignature(photoUrl) {
     const parts     = userName.trim().split(' ');
     const firstName = parts[0] || '';
     const lastName  = parts.slice(1).join(' ') || '';
     const initials  = getInitials(userName);
 
-    // Photo element
     const photoEl = photoUrl
       ? `<img src="${photoUrl}" width="65" height="65"
            style="border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;display:block;"
@@ -230,60 +204,7 @@
            display:flex;align-items:center;justify-content:center;
            color:#fff;font-weight:700;font-size:22px;">${initials}</div>`;
 
-    // QR Code avec vCard
-    const vcard = buildVCard(firstName, lastName);
-    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(vcard)}`;
-
-    // HTML de la signature
-    signatureHtml = `
-<table style="font-family:Segoe UI,Arial,sans-serif;border-collapse:collapse;max-width:540px;">
-  <tr>
-
-    <!-- Photo -->
-    <td style="padding-right:16px;vertical-align:middle;">
-      ${photoEl}
-    </td>
-
-    <!-- Informations -->
-    <td style="padding:0 16px;vertical-align:middle;border-left:3px solid #1a1f5e;">
-      <p style="margin:0 0 3px;font-size:16px;font-weight:700;color:#1a1f5e;">
-        ${firstName} ${lastName}
-      </p>
-      <p style="margin:0 0 8px;font-size:12px;color:#6b7280;">
-        Timsoft Group
-      </p>
-      <p style="margin:0 0 3px;font-size:12px;color:#374151;">
-        ✉&nbsp;
-        <a href="mailto:${userEmail}"
-          style="color:#374151;text-decoration:none;">${userEmail}</a>
-      </p>
-      <p style="margin:5px 0 0;font-size:12px;">
-        <a href="https://www.timsoft-group.com"
-          style="color:#1a1f5e;font-weight:600;text-decoration:none;">
-          www.timsoft-group.com
-        </a>
-      </p>
-    </td>
-
-    <!-- QR Code -->
-    <td style="padding-left:16px;vertical-align:middle;text-align:center;">
-      <img src="${qrUrl}" width="80" height="80" alt="QR Code"
-        style="border:1px solid #e5e7eb;border-radius:8px;display:block;"/>
-      <p style="margin:5px 0 0;font-size:9px;color:#9ca3af;line-height:1.4;">
-        Scanner pour<br>ajouter le contact
-      </p>
-    </td>
-
-  </tr>
-</table>`;
-
-    // Afficher l'aperçu
-    document.getElementById('preview').innerHTML = signatureHtml;
-  }
-
-  // ── Construire vCard pour le QR ───────────────────────────────
-  function buildVCard(firstName, lastName) {
-    return [
+    const vcard = [
       'BEGIN:VCARD',
       'VERSION:3.0',
       `N:${lastName};${firstName};;;`,
@@ -293,12 +214,42 @@
       'URL:https://www.timsoft-group.com',
       'END:VCARD'
     ].join('\n');
+
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=${encodeURIComponent(vcard)}`;
+
+    signatureHtml = `
+<table style="font-family:Segoe UI,Arial,sans-serif;border-collapse:collapse;max-width:540px;">
+  <tr>
+    <td style="padding-right:16px;vertical-align:middle;">${photoEl}</td>
+    <td style="padding:0 16px;vertical-align:middle;border-left:3px solid #1a1f5e;">
+      <p style="margin:0 0 3px;font-size:16px;font-weight:700;color:#1a1f5e;">
+        ${firstName} ${lastName}
+      </p>
+      <p style="margin:0 0 8px;font-size:12px;color:#6b7280;">Timsoft Group</p>
+      <p style="margin:0 0 3px;font-size:12px;color:#374151;">
+        ✉&nbsp;<a href="mailto:${userEmail}" style="color:#374151;text-decoration:none;">${userEmail}</a>
+      </p>
+      <p style="margin:5px 0 0;font-size:12px;">
+        <a href="https://www.timsoft-group.com" style="color:#1a1f5e;font-weight:600;text-decoration:none;">
+          www.timsoft-group.com
+        </a>
+      </p>
+    </td>
+    <td style="padding-left:16px;vertical-align:middle;text-align:center;">
+      <img src="${qrUrl}" width="80" height="80" alt="QR Code"
+        style="border:1px solid #e5e7eb;border-radius:8px;display:block;"/>
+      <p style="margin:5px 0 0;font-size:9px;color:#9ca3af;line-height:1.4;">
+        Scanner pour<br>ajouter le contact
+      </p>
+    </td>
+  </tr>
+</table>`;
+
+    document.getElementById('preview').innerHTML = signatureHtml;
   }
 
-  // ── Insérer la signature dans Outlook ────────────────────────
   function insertSignature() {
     if (!signatureHtml) return;
-
     const btn = document.getElementById('btn-insert');
     btn.disabled    = true;
     btn.textContent = '⏳ Insertion...';
@@ -316,16 +267,13 @@
     }
 
     try {
-      // Méthode 1 : setSignatureAsync (Mailbox 1.10+)
       if (Office.context.mailbox.item.body.setSignatureAsync) {
         Office.context.mailbox.item.body.setSignatureAsync(
           signatureHtml,
           { coercionType: Office.CoercionType.Html },
           r => done(r.status === Office.AsyncResultStatus.Succeeded, r.error?.message)
         );
-      }
-      // Méthode 2 : prependAsync (universel)
-      else {
+      } else {
         Office.context.mailbox.item.body.prependAsync(
           signatureHtml,
           { coercionType: Office.CoercionType.Html },
@@ -337,7 +285,6 @@
     }
   }
 
-  // ── Helpers ───────────────────────────────────────────────────
   function getInitials(name) {
     return (name || '').split(' ')
       .map(p => p[0] || '').join('').substring(0, 2).toUpperCase() || '??';
