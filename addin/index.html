@@ -124,6 +124,17 @@
   let userEmail     = '';
   let signatureHtml = '';
 
+  function getPublicAssetUrl(fileName) {
+    const base = new URL('../', window.location.href);
+    return new URL(fileName, base).href;
+  }
+
+  function normalizeTemplateAssets(html) {
+    if (!html) return html;
+    const logoUrl = getPublicAssetUrl('timsoft-logo.png');
+    return html.replace(/src=(['"])(?:\.\.\/|\.\/|\/)?timsoft-logo\.png\1/gi, 'src="' + logoUrl + '"');
+  }
+
   function log(msg, type) {
     console.log('[TimsoftAddin]', msg);
     const el = document.getElementById('debug-log');
@@ -164,7 +175,7 @@
       document.getElementById('source-badge').className = 'badge ok';
 
       const photoUrl = await loadPhotoFromOutlook();
-      signatureHtml = injectPhotoAndQr(dashboardHtml, photoUrl);
+      signatureHtml = injectPhotoAndQr(normalizeTemplateAssets(dashboardHtml), photoUrl);
       updateAvatar(photoUrl, initials);
     } else {
       log('⚠️ Dashboard indisponible ou utilisateur non trouvé — fallback générique', 'err');

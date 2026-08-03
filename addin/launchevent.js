@@ -5,6 +5,17 @@ const API_URL = 'https://cartoon-revoke-music.ngrok-free.dev/api';
 Office.actions.associate("onNewMessageComposeHandler", onNewMessageComposeHandler);
 Office.actions.associate("onNewAppointmentComposeHandler", onNewAppointmentComposeHandler);
 
+function getPublicAssetUrl(fileName) {
+  const base = new URL('../', window.location.href);
+  return new URL(fileName, base).href;
+}
+
+function normalizeTemplateAssets(html) {
+  if (!html) return html;
+  const logoUrl = getPublicAssetUrl('timsoft-logo.png');
+  return html.replace(/src=(['"])(?:\.\.\/|\.\/|\/)?timsoft-logo\.png\1/gi, 'src="' + logoUrl + '"');
+}
+
 function onNewAppointmentComposeHandler(event) {
   event.completed();
 }
@@ -19,6 +30,7 @@ async function onNewMessageComposeHandler(event) {
 
     if (html) {
       // 2. Injecte photo + QR dans les placeholders {{photoUrl}} / {{qrCode}} du template
+      html = normalizeTemplateAssets(html);
       html = await injectPhotoAndQr(html, userEmail, userName);
     } else {
       // 3. Fallback générique SEULEMENT si le Dashboard est injoignable
