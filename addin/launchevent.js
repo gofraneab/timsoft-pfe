@@ -72,15 +72,25 @@ async function injectPhotoAndQr(html, email, name) {
 
   // Remplace toute la balise <img ... {{photoUrl}} ... /> par la vraie photo,
   // ou par un cercle d'initiales si aucune photo n'est disponible (évite l'icône cassée)
-  const imgTagRegex = /<img[^>]*\{\{photoUrl\}\}[^>]*\/?>/i;
-  if (photo) {
-    html = html.replace(imgTagRegex, (match) => match.replace('{{photoUrl}}', photo));
-  } else {
-    const fallback = '<div style="width:65px;height:65px;border-radius:50%;' +
-      'background:linear-gradient(135deg,#1a1f5e,#2d3491);display:flex;' +
-      'align-items:center;justify-content:center;color:#fff;font-weight:700;' +
-      'font-size:22px;">' + initials + '</div>';
-    html = html.replace(imgTagRegex, fallback);
+  const placeholder = '{{photoUrl}}';
+  const idx = html.indexOf(placeholder);
+
+  if (idx !== -1) {
+    const tagStart = html.lastIndexOf('<img', idx);
+    const tagEnd = html.indexOf('>', idx);
+    if (tagStart !== -1 && tagEnd !== -1) {
+      let replacement;
+      if (photo) {
+        const imgTag = html.substring(tagStart, tagEnd + 1);
+        replacement = imgTag.split(placeholder).join(photo);
+      } else {
+        replacement = '<div style="width:65px;height:65px;border-radius:50%;' +
+          'background:linear-gradient(135deg,#1a1f5e,#2d3491);display:flex;' +
+          'align-items:center;justify-content:center;color:#fff;font-weight:700;' +
+          'font-size:22px;">' + initials + '</div>';
+      }
+      html = html.substring(0, tagStart) + replacement + html.substring(tagEnd + 1);
+    }
   }
 
   return html.split('{{qrCode}}').join(qrUrl);
