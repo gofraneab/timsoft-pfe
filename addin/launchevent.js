@@ -57,6 +57,7 @@ async function injectPhotoAndQr(html, email, name) {
   const parts = name.trim().split(' ');
   const firstName = parts[0] || '';
   const lastName  = parts.slice(1).join(' ') || '';
+  const initials  = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase() || '??';
 
   const vcard = [
     'BEGIN:VCARD', 'VERSION:3.0',
@@ -69,9 +70,20 @@ async function injectPhotoAndQr(html, email, name) {
   ].join('\n');
   const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=' + encodeURIComponent(vcard);
 
-  return html
-    .split('{{photoUrl}}').join(photo || '')
-    .split('{{qrCode}}').join(qrUrl);
+  // Remplace toute la balise <img ... {{photoUrl}} ... /> par la vraie photo,
+  // ou par un cercle d'initiales si aucune photo n'est disponible (évite l'icône cassée)
+  const imgTagRegex = /<img[^>]*\{\{photoUrl\}\}[^>]*\/?>/i;
+  if (photo) {
+    html = html.replace(imgTagRegex, (match) => match.replace('{{photoUrl}}', photo));
+  } else {
+    const fallback = '<div style="width:65px;height:65px;border-radius:50%;' +
+      'background:linear-gradient(135deg,#1a1f5e,#2d3491);display:flex;' +
+      'align-items:center;justify-content:center;color:#fff;font-weight:700;' +
+      'font-size:22px;">' + initials + '</div>';
+    html = html.replace(imgTagRegex, fallback);
+  }
+
+  return html.split('{{qrCode}}').join(qrUrl);
 }
 
 // ── Fallback : signature générique construite localement ──
