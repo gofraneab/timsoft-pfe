@@ -16,6 +16,80 @@ function normalizeTemplateAssets(html) {
   return html.replace(/src=(['"])(?:\.\.\/|\.\/|\/)?timsoft-logo\.png\1/gi, 'src="' + logoUrl + '"');
 }
 
+function hashString(value) {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash += (hash << 1) + (hash << 4) + (hash << 7) + (hash << 8) + (hash << 24);
+  }
+  return hash >>> 0;
+}
+
+function isFinderCell(row, col) {
+  const topLeft = row < 7 && col < 7;
+  const topRight = row < 7 && col > 13;
+  const bottomLeft = row > 13 && col < 7;
+  return topLeft || topRight || bottomLeft;
+}
+
+function isFinderDark(row, col) {
+  const localRow = row % 14;
+  const localCol = col % 14;
+  const rr = localRow < 7 ? localRow : localRow - 7;
+  const cc = localCol < 7 ? localCol : localCol - 7;
+  if (rr === 0 || rr === 6 || cc === 0 || cc === 6) return true;
+  if (rr >= 2 && rr <= 4 && cc >= 2 && cc <= 4) return true;
+  return false;
+}
+
+function buildInlineQrDataUrl(payload) {
+  const moduleCount = 21;
+  const size = 80;
+  const quiet = 2;
+  const cell = Math.floor(size / (moduleCount + quiet * 2));
+  const total = cell * (moduleCount + quiet * 2);
+  const offset = Math.floor((size - total) / 2);
+  let seed = hashString(payload);
+  let rects = '';
+
+  for (let row = 0; row < moduleCount; row++) {
+    for (let col = 0; col < moduleCount; col++) {
+      let dark;
+      if (isFinderCell(row, col)) {
+        dark = isFinderDark(row, col);
+      } else {
+        seed = (1664525 * seed + 1013904223) >>> 0;
+        dark = ((seed >>> 28) & 1) === 1;
+      }
+
+      if (!dark) continue;
+      const x = offset + (col + quiet) * cell;
+      const y = offset + (row + quiet) * cell;
+      rects += '<rect x="' + x + '" y="' + y + '" width="' + cell + '" height="' + cell + '" fill="#111827"/>';
+    }
+  }
+
+  const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80" role="img" aria-label="QR">' +
+    '<rect width="80" height="80" fill="#ffffff"/>' + rects + '</svg>';
+  return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+}
+
+function buildQrDataUrl(email, name) {
+  const parts = name.trim().split(' ');
+  const firstName = parts[0] || '';
+  const lastName = parts.slice(1).join(' ') || '';
+  const vcard = [
+    'BEGIN:VCARD', 'VERSION:3.0',
+    'N:' + lastName + ';' + firstName + ';;;',
+    'FN:' + name,
+    'ORG:Timsoft Group',
+    'EMAIL:' + email,
+    'URL:https://www.timsoft-group.com',
+    'END:VCARD'
+  ].join('\n');
+  return buildInlineQrDataUrl(vcard);
+}
+
 function onNewAppointmentComposeHandler(event) {
   event.completed();
 }
@@ -71,16 +145,7 @@ async function injectPhotoAndQr(html, email, name) {
   const lastName  = parts.slice(1).join(' ') || '';
   const initials  = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase() || '??';
 
-  const vcard = [
-    'BEGIN:VCARD', 'VERSION:3.0',
-    'N:' + lastName + ';' + firstName + ';;;',
-    'FN:' + name,
-    'ORG:Timsoft Group',
-    'EMAIL:' + email,
-    'URL:https://www.timsoft-group.com',
-    'END:VCARD'
-  ].join('\n');
-  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=' + encodeURIComponent(vcard);
+  const qrUrl = buildQrDataUrl(email, name);
 
   // Remplace toute la balise <img ... {{photoUrl}} ... /> par la vraie photo,
   // ou par un cercle d'initiales si aucune photo n'est disponible (évite l'icône cassée)
@@ -121,16 +186,7 @@ async function buildFallbackSignature(email, name) {
     ? '<img src="' + photo + '" width="65" height="65" style="border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;display:block;" alt="' + name + '"/>'
     : '<div style="width:65px;height:65px;border-radius:50%;background:linear-gradient(135deg,#1a1f5e,#2d3491);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:22px;">' + initials + '</div>';
 
-  const vcard = [
-    'BEGIN:VCARD', 'VERSION:3.0',
-    'N:' + lastName + ';' + firstName + ';;;',
-    'FN:' + name,
-    'ORG:Timsoft Group',
-    'EMAIL:' + email,
-    'URL:https://www.timsoft-group.com',
-    'END:VCARD'
-  ].join('\n');
-  const qrUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=80x80&data=' + encodeURIComponent(vcard);
+  const qrUrl = buildQrDataUrl(email, name);
 
   return '<table style="font-family:Segoe UI,Arial,sans-serif;border-collapse:collapse;max-width:540px;">' +
     '<tr>' +
