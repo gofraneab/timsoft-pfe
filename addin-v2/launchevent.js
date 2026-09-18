@@ -74,19 +74,7 @@ function buildInlineQrDataUrl(payload) {
   return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
 }
 
-function ensureQrCodeLibrary() {
-  if (window.qrcode) return Promise.resolve();
-  return new Promise((resolve, reject) => {
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
-    script.onload = resolve;
-    script.onerror = reject;
-    document.head.appendChild(script);
-  });
-}
-
-async function buildQrDataUrl(email, name) {
-  await ensureQrCodeLibrary();
+function buildQrDataUrl(email, name) {
   const parts = name.trim().split(' ');
   const firstName = parts[0] || '';
   const lastName = parts.slice(1).join(' ') || '';
@@ -99,10 +87,7 @@ async function buildQrDataUrl(email, name) {
     'URL:https://www.timsoft-group.com',
     'END:VCARD'
   ].join('\n');
-  const qr = window.qrcode(0, 'H');
-  qr.addData(vcard);
-  qr.make();
-  return qr.createDataURL(4, 2);
+  return buildInlineQrDataUrl(vcard);
 }
 
 function onNewAppointmentComposeHandler(event) {
@@ -160,7 +145,7 @@ async function injectPhotoAndQr(html, email, name) {
   const lastName  = parts.slice(1).join(' ') || '';
   const initials  = ((firstName[0] || '') + (lastName[0] || '')).toUpperCase() || '??';
 
-  const qrUrl = await buildQrDataUrl(email, name);
+  const qrUrl = buildQrDataUrl(email, name);
 
   // Remplace toute la balise <img ... {{photoUrl}} ... /> par la vraie photo,
   // ou par un cercle d'initiales si aucune photo n'est disponible (évite l'icône cassée)
@@ -183,12 +168,6 @@ async function injectPhotoAndQr(html, email, name) {
       }
       html = html.substring(0, tagStart) + replacement + html.substring(tagEnd + 1);
     }
-  } else {
-    const legacyPhoto = /<div[^>]*>\s*Photo\s*<\/div>/i;
-    const replacement = photo
-      ? '<img src="' + photo + '" width="65" height="65" style="border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;display:block;" alt="' + name + '"/>'
-      : '<div style="width:65px;height:65px;border-radius:50%;background:linear-gradient(135deg,#1a1f5e,#2d3491);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:22px;">' + initials + '</div>';
-    html = html.replace(legacyPhoto, replacement);
   }
 
   return html.split('{{qrCode}}').join(qrUrl);
@@ -207,7 +186,7 @@ async function buildFallbackSignature(email, name) {
     ? '<img src="' + photo + '" width="65" height="65" style="border-radius:50%;object-fit:cover;border:2px solid #e5e7eb;display:block;" alt="' + name + '"/>'
     : '<div style="width:65px;height:65px;border-radius:50%;background:linear-gradient(135deg,#1a1f5e,#2d3491);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:22px;">' + initials + '</div>';
 
-  const qrUrl = await buildQrDataUrl(email, name);
+  const qrUrl = buildQrDataUrl(email, name);
 
   return '<table style="font-family:Segoe UI,Arial,sans-serif;border-collapse:collapse;max-width:540px;">' +
     '<tr>' +
