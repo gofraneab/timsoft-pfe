@@ -214,7 +214,7 @@
     }
   }
 
-  function injectPhotoAndQr(html, photoUrl) {
+  async function injectPhotoAndQr(html, photoUrl) {
     const qrUrl = await buildQrDataUrl();
     const initials = getInitials(userName);
     const placeholder = '{{photoUrl}}';
@@ -278,7 +278,7 @@
     return qr.createDataURL(4, 2);
   }
 
-  function buildFallbackSignature(photoUrl) {
+  async function buildFallbackSignature(photoUrl) {
     const parts     = userName.trim().split(' ');
     const firstName = parts[0] || '';
     const lastName  = parts.slice(1).join(' ') || '';
