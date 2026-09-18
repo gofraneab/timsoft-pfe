@@ -283,15 +283,25 @@
     return false;
   }
 
+  // ── QR code rendu en PNG (via Canvas) au lieu de SVG ──────────
+  // Outlook ne supporte pas fiablement les data-URI SVG dans le corps d'un email ;
+  // on dessine donc sur un <canvas> caché puis on exporte en PNG, largement supporté.
   function buildInlineQrDataUrl(payload) {
     const moduleCount = 21;
-    const size = 80;
+    const size = 240; // rendu en plus grand pour rester net une fois réduit à 80px à l'affichage
     const quiet = 2;
     const cell = Math.floor(size / (moduleCount + quiet * 2));
     const total = cell * (moduleCount + quiet * 2);
     const offset = Math.floor((size - total) / 2);
     let seed = hashString(payload);
-    let rects = '';
+
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, size, size);
+    ctx.fillStyle = '#111827';
 
     for (let row = 0; row < moduleCount; row++) {
       for (let col = 0; col < moduleCount; col++) {
@@ -302,17 +312,14 @@
           seed = (1664525 * seed + 1013904223) >>> 0;
           dark = ((seed >>> 28) & 1) === 1;
         }
-
         if (!dark) continue;
         const x = offset + (col + quiet) * cell;
         const y = offset + (row + quiet) * cell;
-        rects += '<rect x="' + x + '" y="' + y + '" width="' + cell + '" height="' + cell + '" fill="#111827"/>';
+        ctx.fillRect(x, y, cell, cell);
       }
     }
 
-    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 80 80" role="img" aria-label="QR">' +
-      '<rect width="80" height="80" fill="#ffffff"/>' + rects + '</svg>';
-    return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    return canvas.toDataURL('image/png');
   }
 
   function buildQrDataUrl() {
