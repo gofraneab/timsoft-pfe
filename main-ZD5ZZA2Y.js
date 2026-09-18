@@ -86,7 +86,7 @@ END:VCARD`}generateQrCode(e){return y(this,null,function*(){try{return yield gP.
             <td style="border-left:3px solid #2563eb; padding-left:16px; vertical-align:middle;">
               ${t.photo||t.fullName||t.position||t.department?`
               <div style="display:flex; align-items:center; gap:12px; margin-bottom:${t.photo?"8px":"0"};">
-                ${t.photo?`<div style="flex:0 0 auto;">${this.getPhotoPreviewMarkup()}</div>`:""}
+                ${t.photo?`<div style="flex:0 0 auto;">${this.getPhotoMarkup()}</div>`:""}
                 <div>
                   ${t.fullName?'<div style="font-size:16px; font-weight:800; color:#111827;">{{firstName}} {{lastName}}</div>':""}
                   ${t.position?`<div style="color:#6b7280; margin:3px 0 8px; font-weight:600;">{{position}}${t.department?" | {{department}}":""}</div>`:t.department?'<div style="color:#6b7280; margin:3px 0 8px;">{{department}}</div>':""}
@@ -112,7 +112,7 @@ END:VCARD`}generateQrCode(e){return y(this,null,function*(){try{return yield gP.
             <td style="border-left:2px solid rgba(56,189,248,0.8); padding-left:16px; vertical-align:top;">
               ${t.photo||t.fullName||t.position||t.department?`
               <div style="display:flex; align-items:center; gap:12px; margin-bottom:${t.photo?"8px":"0"};">
-                ${t.photo?`<div style="flex:0 0 auto;">${this.getPhotoPreviewMarkup()}</div>`:""}
+                ${t.photo?`<div style="flex:0 0 auto;">${this.getPhotoMarkup()}</div>`:""}
                 <div>
                   ${t.fullName?'<div style="font-size:18px; font-weight:800; letter-spacing:0.01em;">{{firstName}} {{lastName}}</div>':""}
                   ${t.position?'<div style="color:#38bdf8; font-size:12px; margin:3px 0 2px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">{{position}}</div>':""}
@@ -194,7 +194,7 @@ END:VCARD`}generateQrCode(e){return y(this,null,function*(){try{return yield gP.
             <td style="border-left:3px solid #2563eb; padding-left:16px; vertical-align:middle;">
               ${e.photo||e.name||e.jobTitle||e.department?`
               <div style="display:flex; align-items:center; gap:12px; margin-bottom:${e.photo?"8px":"0"};">
-                ${e.photo?`<div style="flex:0 0 auto;">${this.getPhotoPreviewMarkup()}</div>`:""}
+                ${e.photo?`<div style="flex:0 0 auto;">${this.getPhotoMarkup()}</div>`:""}
                 <div>
                   ${e.name?'<div style="font-size:16px; font-weight:800; color:#111827;">{{firstName}} {{lastName}}</div>':""}
                   ${e.jobTitle?`<div style="color:#6b7280; margin:3px 0 8px; font-weight:600;">{{position}}${e.department?" | {{department}}":""}</div>`:e.department?'<div style="color:#6b7280; margin:3px 0 8px;">{{department}}</div>':""}
@@ -220,7 +220,7 @@ END:VCARD`}generateQrCode(e){return y(this,null,function*(){try{return yield gP.
             <td style="border-left:2px solid rgba(56,189,248,0.8); padding-left:16px; vertical-align:top;">
               ${e.photo||e.name||e.jobTitle||e.department?`
               <div style="display:flex; align-items:center; gap:12px; margin-bottom:${e.photo?"8px":"0"};">
-                ${e.photo?`<div style="flex:0 0 auto;">${this.getPhotoPreviewMarkup()}</div>`:""}
+                ${e.photo?`<div style="flex:0 0 auto;">${this.getPhotoMarkup()}</div>`:""}
                 <div>
                   ${e.name?'<div style="font-size:18px; font-weight:800; letter-spacing:0.01em;">{{firstName}} {{lastName}}</div>':""}
                   ${e.jobTitle?'<div style="color:#38bdf8; font-size:12px; margin:3px 0 2px; font-weight:700; text-transform:uppercase; letter-spacing:0.04em;">{{position}}</div>':""}
